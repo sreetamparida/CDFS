@@ -42,19 +42,19 @@ class Worker:
                 print(e.stderr)
         
     def createCart(self, UID):
-        cart = os.path.join(self.DFS_CART, UID)
-        if not os.path.exists(cart):
+        path = os.path.join(self.DFS_CART, UID)
+        if not os.path.exists(path):
             try:
-                cmd = subprocess.run('mkdir ' + cart, shell = True, check = True)
+                cmd = subprocess.run('mkdir ' + path, shell = True, check = True)
                 if cmd.returncode == 0:
                     print('*** Cart Created')
             except subprocess.CalledProcessError as e:
                 print(e.stderr)
-        cart = open(os.path.join(cart, 'cart.json'), 'x')
+        cart = open(os.path.join(path, 'cart.json'), 'x')
         cart.write('[]')
         cart.close()
-        meta = open(os.path.join(cart, 'metadata.json'), 'x')
-        meta.write('{}')
+        meta = open(os.path.join(path, 'metadata.json'), 'x')
+        meta.write('{"VERSION":1, "TIMESTAMP":123456}')
         meta.close()
 
     def addToCart(self, UID, value):
@@ -65,6 +65,7 @@ class Worker:
             cart = json.load(f)
             cart.append(value)
             f.seek(0)
+            f.truncate()
             json.dump(cart,f)
     
     def deleteFromCart(self, UID, value):
@@ -76,7 +77,9 @@ class Worker:
             for item in cart:
                 if item['ID'] == value['ID']:
                     cart.remove(item)
+                    break
             f.seek(0)
+            f.truncate()
             json.dump(cart,f)
 
     def updateCart(self, UID, value):
@@ -89,10 +92,12 @@ class Worker:
                 if item['ID'] == value['ID']:
                     cart.remove(item)
                     cart.append(value)
+                    break
             f.seek(0)
+            f.truncate()
             json.dump(cart,f)
     
-    def listCart(self, UID, value):
+    def listCart(self, UID):
         path = UID + '/cart.json'
         path = os.path.join(self.DFS_CART, path)
 
@@ -109,12 +114,14 @@ class Worker:
                     secondaryIndex[ATTRIB_ID] = []
                 secondaryIndex[ATTRIB_ID].append(UID)
                 f.seek(0)
+                f.truncate()
                 json.dump(secondaryIndex, f)
             else:
                 if ATTRIB_ID in secondaryIndex:
                     if UID in secondaryIndex[ATTRIB_ID]:
                         secondaryIndex[ATTRIB_ID].remove(UID)
                         f.seek(0)
+                        f.truncate()
                         json.dump(secondaryIndex,f)
 
     def getSecondaryIndex(self, ATTRIB_ID):
@@ -135,9 +142,10 @@ class Worker:
             meta['VERSION'] = version
             meta['TIMESTAMP'] = timestamp
             f.seek(0)
+            f.truncate()
             json.dump(meta, f)
 
-    def getMetadata(self, UID, version, timestamp):
+    def getMetadata(self, UID):
         path = UID + '/metadata.json'
         path = os.path.join(self.DFS_CART, path)
 
