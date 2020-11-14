@@ -51,8 +51,10 @@ class Worker:
             except subprocess.CalledProcessError as e:
                 print(e.stderr)
         cart = open(os.path.join(cart, 'cart.json'), 'x')
+        cart.write('[]')
         cart.close()
         meta = open(os.path.join(cart, 'metadata.json'), 'x')
+        meta.write('{}')
         meta.close()
 
     def addToCart(self, UID, value):
@@ -123,6 +125,26 @@ class Worker:
             return indexes[ATTRIB_ID]
         else:
             return []
+
+    def updateMetadata(self, UID, version, timestamp):
+        path = UID + '/metadata.json'
+        path = os.path.join(self.DFS_CART, path)
+
+        with open(path, 'r+') as f:
+            meta = json.load(f)
+            meta['VERSION'] = version
+            meta['TIMESTAMP'] = timestamp
+            f.seek(0)
+            json.dump(meta, f)
+
+    def getMetadata(self, UID, version, timestamp):
+        path = UID + '/metadata.json'
+        path = os.path.join(self.DFS_CART, path)
+
+        with open(path, 'r') as f:
+            meta = json.load(f)
+            return meta
+    
 
     
     
