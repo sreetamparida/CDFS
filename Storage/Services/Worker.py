@@ -12,6 +12,7 @@ class Worker:
         self.DFS_HOME = os.path.join(self.HOME, '.dfs')
         self.DFS_CART = os.path.join(self.DFS_HOME, 'cart')
         self.DFS_ATTRIB = os.path.join(self.DFS_HOME, 'attrib')
+        self.SECONDARY_INDEX_PATH = os.path.join(self.DFS_ATTRIB, 'secondaryindex.json')
 
         if not os.path.exists(self.DFS_HOME):
             try:
@@ -34,6 +35,9 @@ class Worker:
                 cmd = subprocess.run('mkdir ' + self.DFS_ATTRIB, shell = True, check = True)
                 if cmd.returncode == 0:
                     print('*** Attribute Directory Created')
+                    secondaryIndex = open(self.SECONDARY_INDEX_PATH, 'x')
+                    secondaryIndex.write('{}')
+                    secondaryIndex.close()
             except subprocess.CalledProcessError as e:
                 print(e.stderr)
         
@@ -48,7 +52,7 @@ class Worker:
                 print(e.stderr)
         cart = open(os.path.join(cart, 'cart.json'), 'x')
         cart.close()
-        meta = open(os.path.join(cart, 'metadata'), 'x')
+        meta = open(os.path.join(cart, 'metadata.json'), 'x')
         meta.close()
 
     def addToCart(self, UID, value):
@@ -95,19 +99,30 @@ class Worker:
         
         return cart
 
+    def updateSecondaryIndex(self, UID, ATTRIB_ID, delete=False):
+        with open(self.SECONDARY_INDEX_PATH, 'r+') as f:
+            secondaryIndex = json.load(f)
+            if not delete:
+                if ATTRIB_ID not in secondaryIndex:
+                    secondaryIndex[ATTRIB_ID] = []
+                secondaryIndex[ATTRIB_ID].append(UID)
+                f.seek(0)
+                json.dump(secondaryIndex, f)
+            else:
+                if ATTRIB_ID in secondaryIndex:
+                    if UID in secondaryIndex[ATTRIB_ID]:
+                        secondaryIndex[ATTRIB_ID].remove(UID)
+                        f.seek(0)
+                        json.dump(secondaryIndex,f)
 
-        
+    def getSecondaryIndex(self, ATTRIB_ID):
+        with open(self.SECONDARY_INDEX_PATH, 'r') as f:
+            indexes = json.load(f)
+
+        if ATTRIB_ID in indexes:
+            return indexes[ATTRIB_ID]
+        else:
+            return []
+
     
-        
-        
-
-
-        
-
-
-
-
-
-
-
-        
+    
