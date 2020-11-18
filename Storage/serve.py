@@ -10,8 +10,7 @@ app.config["DEBUG"] = True
 
 value = {
     'ID': None,
-    'PRODUCT_NAME': None,
-    'QUANTITY': None
+    'PRODUCT_NAME': None
 }
 worker = Worker()
 
@@ -24,7 +23,6 @@ def createCart():
 
         value['ID'] = request.form['PRODUCT_ID']
         value['PRODUCT_NAME'] = request.form['PRODUCT_NAME']
-        value['QUANTITY'] = request.form['QUANTITY']
 
         worker.createCart(UID)
         worker.addToCart(UID, value)
@@ -42,7 +40,6 @@ def addToCart():
 
         value['ID'] = request.form['PRODUCT_ID']
         value['PRODUCT_NAME'] = request.form['PRODUCT_NAME']
-        value['QUANTITY'] = request.form['QUANTITY']
 
         worker.addToCart(UID, value)
         meta = worker.getMetadata(UID)
@@ -60,7 +57,6 @@ def deleteFromCart():
 
         value['ID'] = request.form['PRODUCT_ID']
         value['PRODUCT_NAME'] = request.form['PRODUCT_NAME']
-        value['QUANTITY'] = request.form['QUANTITY']
 
         worker.deleteFromCart(UID, value)
         meta = worker.getMetadata(UID)
@@ -77,7 +73,6 @@ def updateCart():
 
         value['ID'] = request.form['PRODUCT_ID']
         value['PRODUCT_NAME'] = request.form['PRODUCT_NAME']
-        value['QUANTITY'] = request.form['QUANTITY']
 
         worker.updateCart(UID, value)
         meta = worker.getMetadata(UID)
