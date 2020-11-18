@@ -6,21 +6,35 @@ class ZooKeeper:
         self.client = KazooClient()
         self.client.start()
 
-    def createZnode(self, node_id):
-        path = '/cart/' + node_id
+    def createCart(self, cart_id):
+        path = '/cart/' + cart_id
         self.client.ensure_path(path)
 
-    def getValue(self, node_id):
-        return self.client.get(node_id)[0].decode('utf-8')
-
-    def setReplica(self, node_id, replica):
-        path = '/cart/{node}/{replica}/'.format(node = node_id, replica = replica)
+    def setReplica(self, cart_id, replica):
+        path = '/cart/{node}/{replica}/'.format(node = cart_id, replica = replica)
         self.client.ensure_path(path)
 
-    def deleteReplica(self, node_id, replica):
-        path = '/cart/{node}/{replica}/'.format(node = node_id, replica = replica)
+    def deleteReplica(self, cart_id, replica):
+        path = '/cart/{node}/{replica}/'.format(node = cart_id, replica = replica)
         self.client.delete(path, recursive=True)
     
-    def getReplica(self, node_id):
-        path = '/cart/' + node_id
+    def getReplica(self, cart_id):
+        path = '/cart/' + cart_id
         return self.client.get_children(path)
+    
+    def getCarts(self):
+        return self.client.get_children('/cart/')
+
+    def getNodes(self):
+        return self.client.get_children('/node/')
+        
+    def getNodeIP(self, node_id):
+        path = '/node/' + node_id
+        return self.client.get(path)[0].decode('utf-8')
+
+    def updateSecondaryIndex(self, attrib_id, cart_id, delete=False):
+        path = '/secondaryindex/{attrib_id}/{cart_id}'.format(attrib_id=attrib_id, cart_id=cart_id)
+        if not delete:
+            self.client.ensure_path(path)
+        else:
+            self.client.delete(path)

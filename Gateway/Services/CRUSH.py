@@ -28,3 +28,7 @@ class CRUSH:
             else:
                 return self._crush(username, data['replication_number'], self.CLUSTER_SIZE, data['fail_count'], self.REPLICATIONS)
 
+    def getHash(self, value):
+        self.hash.update(bytes(value, 'utf-8'))
+        return self.hash.hexdigest(8)
+
