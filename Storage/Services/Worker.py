@@ -98,13 +98,23 @@ class Worker:
             json.dump(cart,f)
     
     def listCart(self, UID):
-        path = UID + '/cart.json'
-        path = os.path.join(self.DFS_CART, path)
+        cart_path = UID + '/cart.json'
+        cart_path = os.path.join(self.DFS_CART, cart_path)
+        meta_path = UID + '/metadata.json'
+        meta_path = os.path.join(self.DFS_CART, meta_path)
 
-        with open(path, 'r') as f:
+        with open(meta_path, 'r') as f:
+            meta = json.load(f)
+
+        with open(cart_path, 'r') as f:
             cart = json.load(f)
         
-        return cart
+        result = {
+            'CART': cart,
+            'METADATA': meta
+        }
+        
+        return result
 
     def updateSecondaryIndex(self, UID, ATTRIB_ID, delete=False):
         with open(self.SECONDARY_INDEX_PATH, 'r+') as f:

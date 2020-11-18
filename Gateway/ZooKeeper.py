@@ -38,3 +38,7 @@ class ZooKeeper:
             self.client.ensure_path(path)
         else:
             self.client.delete(path)
+
+    def getSecondaryList(self, attrib_id):
+        path = '/secondaryindex/{attrib_id}'.format(attrib_id=attrib_id)
+        return self.client.get_children(path)

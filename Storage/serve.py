@@ -83,11 +83,11 @@ def updateCart():
 
 @app.route('/listcart', methods=['GET', 'POST'])
 def listCart():
-    if request.method == 'GET':
+    if request.method == 'POST':
         UID = request.form['UID']
         
         return worker.listCart(UID)
-    return {'METHOD': 'POST METHOD NOT SUPPORTED'}
+    return {'METHOD': 'GET METHOD NOT SUPPORTED'}
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
