@@ -95,7 +95,7 @@ def checkVersions(nodeResults, cart_id):
     result = nodeResults[nodes[resultIndex]]
     for index, version in enumerate(versionMap):
         if version != currentVersion:
-            quorum.implementQuorum(nodes[resultIndex], nodes[index], cart_id)
+            quorum.implementQuorum(zk.getNodeIP(nodes[resultIndex]), zk.getNodeIP(nodes[index]), cart_id)
 
     return result
 
