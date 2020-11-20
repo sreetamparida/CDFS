@@ -5,6 +5,7 @@ class ZooKeeper:
     def __init__(self):
         self.client = KazooClient()
         self.client.start()
+        self.cleanup()
 
     def createCart(self, cart_id):
         path = '/cart/' + cart_id
@@ -46,3 +47,16 @@ class ZooKeeper:
     def getSecondaryList(self, attrib_id):
         path = '/secondaryindex/{attrib_id}'.format(attrib_id=attrib_id)
         return self.client.get_children(path)
+    
+    def exists(self, cart_id):
+        carts = self.getCarts()
+        if cart_id in carts:
+            return True
+        else:
+            return False
+
+    def cleanup(self):
+        self.client.delete('/cart/', recursive=True)
+        self.client.delete('/secondaryindex/', recursive=True)
+        self.client.ensure_path('/cart/')
+        self.client.ensure_path('/secondaryindex/')

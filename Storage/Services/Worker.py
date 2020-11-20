@@ -37,8 +37,8 @@ class Worker:
                 if cmd.returncode == 0:
                     print('*** Handoff Directory Created')
                     handoff_path = os.path.join(self.DFS_HANDOFF, '/handoff.json')
-                    handoff = open(handoff_path, 'x')
-                    handoff.write([])
+                    handoff = open(handoff_path, 'w')
+                    handoff.write('[]')
                     handoff.close()
             except subprocess.CalledProcessError as e:
                 print(e.stderr)
@@ -48,7 +48,7 @@ class Worker:
                 cmd = subprocess.run('mkdir ' + self.DFS_ATTRIB, shell = True, check = True)
                 if cmd.returncode == 0:
                     print('*** Attribute Directory Created')
-                    secondaryIndex = open(self.SECONDARY_INDEX_PATH, 'x')
+                    secondaryIndex = open(self.SECONDARY_INDEX_PATH, 'w')
                     secondaryIndex.write('{}')
                     secondaryIndex.close()
             except subprocess.CalledProcessError as e:
@@ -63,10 +63,10 @@ class Worker:
                     print('*** Cart Created')
             except subprocess.CalledProcessError as e:
                 print(e.stderr)
-        cart = open(os.path.join(path, 'cart.json'), 'x')
+        cart = open(os.path.join(path, 'cart.json'), 'w')
         cart.write('[]')
         cart.close()
-        meta = open(os.path.join(path, 'metadata.json'), 'x')
+        meta = open(os.path.join(path, 'metadata.json'), 'w')
         meta.write('{"VERSION":1, "TIMESTAMP":123456}')
         meta.close()
 

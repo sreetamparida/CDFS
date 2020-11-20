@@ -10,7 +10,7 @@ app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 
 db = Database()
-crush = CRUSH
+crush = CRUSH(3,5)
 zk = ZooKeeper()
 quorum = Quorum()
 
@@ -29,7 +29,7 @@ def parseQuery(query):
         TEMPLATE['TYPE'] = 'USER'
         TEMPLATE['COMMAND'] = query[1].upper()
         TEMPLATE['USERNAME'] = query[0].upper()
-        TEMPLATE['PRODUCT_NAME'] = query[2].upper()
+        TEMPLATE['PRODUCT_NAME'] = ' '.join(query[2:]).upper()
         return TEMPLATE
 
 def executeQuery(COMMAND, ip, data=None, create=False):
@@ -142,14 +142,36 @@ def updateNodes(command, cart_id, data):
         else:
             result = queryResults[node]
     if failCount > 1:
-        return 'FAILURE: Quorum not satisfied'
+        return 'FAILURE'
     else:
         return result
+    
+def createNode(username, cart_id, data):
+    zk.createCart(cart_id)
+    nodes = zk.getNodes()
+    nodes.sort()
+    nodeindex = crush.select(username)
+    failCount = 0
+    replica = 1
+    for index in nodeindex:
+        failCount = 0
+        replica = 1
+        node_ip = zk.getNodeIP(nodes[index])
+        state = executeQuery('ADD', node_ip, data=data, create=True)
+        curr = nodes[index]
+        while(state == 'FAIL'):
+            failCount += 1
+            reindex = crush.select(username, reselect=True, data={'replication_number': replica, 'fail_count': failCount})
+            curr = nodes[reindex]
+            node_ip = zk.getNodeIP(nodes[reindex])
+            state = executeQuery('ADD', node_ip, data=data, create=True)
+        zk.setReplica(cart_id, curr)
+        replica += 1
+    return state
 
 
 
-
-def processAdminQuery(FILTERS = None, HAS_FILTER = True):
+def processAdminQuery(FILTERS = None, HAS_FILTER = False):
     result = {}
     if HAS_FILTER:
         if FILTERS[0].split(':')[0].upper() != 'USER':
@@ -171,11 +193,51 @@ def processAdminQuery(FILTERS = None, HAS_FILTER = True):
             result[cart_id] = queryNodes(cart_id)
         return result
 
-            
+def generateFilters(productdetails):
+    typeFilter = 'TYPE:' + productdetails['TYPE'].upper()
+    categoryFilter = 'CATEGORY:' + productdetails['CATEGORY'].upper()
+    return [typeFilter, categoryFilter]
+
+def generateData(productDetails, uid):
+    data = {}
+    data['UID'] = uid
+    data['PRODUCT_ID'] = productDetails['PRODUCT_ID']
+    data['PRODUCT_NAME'] = productDetails['PRODUCT_NAME']
+    data['ATRRIB_ID'] = 'abcdefgh'
+    return data
 
 
-def processUserQuery():
-    pass
+
+def processUserQuery(username, command, productName):
+    uid = db.getUID(username)
+    if uid != 'NOT A USER':
+        if zk.exists(uid):
+            if command == 'LIST':
+                result = queryNodes(uid)
+                return result
+            productDetails = db.getProductDetails(productName)
+            filters = generateFilters(productDetails)
+            data = generateData(productDetails, uid)
+            result = updateNodes(command, uid, data)
+            if result != 'FAILURE':
+                for f in filters:
+                    if command != 'DELETE':
+                        zk.updateSecondaryIndex(f, uid)
+                    else:
+                        zk.updateSecondaryIndex(f, uid, delete=True)
+            return result
+        else:
+            productDetails = db.getProductDetails(productName)
+            filters = generateFilters(productDetails)
+            data = generateData(productDetails, uid)
+            result = createNode(username, uid, data)
+            if result != 'FAIL':
+                for f in filters:
+                    zk.updateSecondaryIndex(f, uid)
+            return result
+    else:
+        return 'NOT A USER'
+
 
 
 @app.route('/cdfs.gateway', methods=['GET', 'POST'])
@@ -183,5 +245,17 @@ def manage():
     queryParams = request.args
     query = queryParams.get('query')
     parsedQuery = parseQuery(query)
+    if parsedQuery['TYPE'] == 'ADMIN':
+        if parsedQuery['HAS_FILTER']:
+            result = processAdminQuery(parsedQuery['FILTERS'], HAS_FILTER=True)
+        else:
+            result = processAdminQuery()
+    else:
+        result = processUserQuery(parsedQuery['USERNAME'], parsedQuery['COMMAND'], parsedQuery['PRODUCT_NAME'])
+    return result
+
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0')
 
 

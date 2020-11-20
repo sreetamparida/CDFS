@@ -4,11 +4,11 @@ class Database:
 
     def __init__(self):
         self.DATABASE = None
-        with open('Dependencies/data.json', 'r') as f:
+        with open('Database/Dependencies/data.json', 'r') as f:
             self.DATABASE = json.load(f)
 
         self.USERDATA = None
-        with open('Dependencies/userdata.json', 'r') as f:
+        with open('Database/Dependencies/userdata.json', 'r') as f:
             self.USERDATA = json.load(f)
 
         self.PRODUCTS = None
