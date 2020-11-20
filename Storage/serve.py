@@ -89,6 +89,13 @@ def listCart():
         return worker.listCart(UID)
     return {'METHOD': 'GET METHOD NOT SUPPORTED'}
 
+@app.route('/handoff', methods=['GET', 'POST'])
+def handleHandoff():
+    if request.method == 'POST':
+        instruction = request.form('INSTRUCTION')
+        worker.handleHandoff(instruction)
+        return 'SUCCESS: HANDOFF PERFORMED'
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
 

@@ -31,6 +31,10 @@ class ZooKeeper:
     def getNodeIP(self, node_id):
         path = '/node/' + node_id
         return self.client.get(path)[0].decode('utf-8')
+    
+    def getHandoffNodeIP(self, node_id):
+        path = '/handoff/' + node_id
+        return self.client.get(path)[0].decode('utf-8')
 
     def updateSecondaryIndex(self, attrib_id, cart_id, delete=False):
         path = '/secondaryindex/{attrib_id}/{cart_id}'.format(attrib_id=attrib_id, cart_id=cart_id)

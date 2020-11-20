@@ -4,6 +4,7 @@ from flask import request, jsonify
 from Services.CRUSH import CRUSH
 from ZooKeeper import ZooKeeper
 from Database.Database import Database
+from Services.Quorum import Quorum
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
@@ -11,6 +12,7 @@ app.config["DEBUG"] = True
 db = Database()
 crush = CRUSH
 zk = ZooKeeper()
+quorum = Quorum()
 
 def parseQuery(query):
     query = query.strip().split()
@@ -40,14 +42,14 @@ def executeQuery(COMMAND, ip, data=None, create=False):
             if req.status_code == 200:
                 return req.json()
             else:
-                return "FAIL"
+                return 'FAIL'
         else:
             url = url + 'createcart'
             req = requests.post(url, data=data)
             if req.status_code == 200:
                 return req.json()
             else:
-                return "FAIL"
+                return 'FAIL'
 
     elif COMMAND == 'DELETE':
         url = url + 'deletefromcart'
@@ -55,7 +57,7 @@ def executeQuery(COMMAND, ip, data=None, create=False):
         if req.status_code == 200:
             return req.json()
         else:
-            return "FAIL"
+            return 'FAIL'
     
     elif COMMAND == 'LIST':
         url = url + 'listcart'
@@ -63,7 +65,7 @@ def executeQuery(COMMAND, ip, data=None, create=False):
         if req.status_code == 200:
             return req.json()
         else:
-            return "FAIL"
+            return 'FAIL'
     
     elif COMMAND == 'UPDATE':
         url = url + 'updatecart'
@@ -71,32 +73,104 @@ def executeQuery(COMMAND, ip, data=None, create=False):
         if req.status_code == 200:
             return req.json()
         else:
-            return "FAIL"
+            return 'FAIL'
+    
+    elif COMMAND == 'HANDOFF':
+        url = url + 'handoff'
+        req = requests.post(url, data=data)
+        if req.status_code == 200:
+            return 'SUCCESS'
+        else:
+            return 'FAIL'
     else:
         return 'FAIL'
-def checkVersions(temp):
-    return temp
 
-def queryNodes(cart_id, command, data, create=False):
+def checkVersions(nodeResults, cart_id):
+    versionMap = []
+    nodes = list(nodeResults.keys())
+    for node in nodes:
+        versionMap.append(int(nodeResults[node]['METADATA']['VERSION']))
+    currentVersion = max(versionMap)
+    resultIndex = versionMap.index(currentVersion)
+    result = nodeResults[nodes[resultIndex]]
+    for index, version in enumerate(versionMap):
+        if version != currentVersion:
+            quorum.implementQuorum(nodes[resultIndex], nodes[index], cart_id)
+
+    return result
+
+def queryNodes(cart_id):
+    data = {'UID': cart_id}
     nodelist = zk.getReplica(cart_id)
     queryResults = {}
     for node in nodelist:
         node_ip = zk.getNodeIP(node)
-        res = executeQuery(command, node_ip, data, create=create)
+        res = executeQuery('LIST', node_ip, data)
         queryResults[node] = res
-    result = checkVersions(queryResults)
+    failCount = 0
+    for node in queryResults:
+        if queryResults[node] == 'FAIL':
+            failCount += 1
+    if failCount > 1:
+        return 'FAILURE: Quorum not Satisfied'
+    result = checkVersions(queryResults, cart_id)
     return result
     
+def updateNodes(command, cart_id, data):
+    nodelist = zk.getReplica(cart_id)
+    queryResults = {}
+    result = {}
+    for node in nodelist:
+        node_ip = zk.getNodeIP(node)
+        res = executeQuery(command, node_ip, data)
+        queryResults[node] = res
+
+    failCount = 0
+    for node in queryResults:
+        if queryResults[node] == 'FAIL':
+            instruction = {
+                'COMMAND': command,
+                'DATA': data
+            }
+            handoff_ip = zk.getHandoffNodeIP(node)
+            state = executeQuery('HANDOFF', handoff_ip, data= instruction)
+            if state == 'SUCCESS':
+                continue
+            else:
+                failCount+=1
+            # Implemented hinted handoff
+        else:
+            result = queryResults[node]
+    if failCount > 1:
+        return 'FAILURE: Quorum not satisfied'
+    else:
+        return result
 
 
 
-def processAdminQuery(FILTERS, HAS_FILTER = True):
+
+def processAdminQuery(FILTERS = None, HAS_FILTER = True):
+    result = {}
     if HAS_FILTER:
         if FILTERS[0].split(':')[0].upper() != 'USER':
             cartlists = []
             for f in FILTERS:
                 cartlists.extend(zk.getSecondaryList(f.upper()))
             cartlists = list(set(cartlists))
+            for cart_id in cartlists:
+                result[cart_id] = queryNodes(cart_id)
+            return result
+        else:
+            username = FILTERS[0].split(':')[1].strip().upper()
+            uid = db.getUID(username)
+            result = queryNodes(uid)
+            return result
+    else:
+        cartlists = zk.getCarts()
+        for cart_id in cartlists:
+            result[cart_id] = queryNodes(cart_id)
+        return result
+
             
 
 

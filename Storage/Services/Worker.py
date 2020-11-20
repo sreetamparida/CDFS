@@ -12,6 +12,7 @@ class Worker:
         self.DFS_HOME = os.path.join(self.HOME, '.dfs')
         self.DFS_CART = os.path.join(self.DFS_HOME, 'cart')
         self.DFS_ATTRIB = os.path.join(self.DFS_HOME, 'attrib')
+        self.DFS_HANDOFF = os.path.join(self.DFS_HOME, 'handoff')
         self.SECONDARY_INDEX_PATH = os.path.join(self.DFS_ATTRIB, 'secondaryindex.json')
 
         if not os.path.exists(self.DFS_HOME):
@@ -27,6 +28,18 @@ class Worker:
                 cmd = subprocess.run('mkdir ' + self.DFS_CART, shell = True, check = True)
                 if cmd.returncode == 0:
                     print('*** Cart Directory Created')
+            except subprocess.CalledProcessError as e:
+                print(e.stderr)
+
+        if not os.path.exists(self.DFS_HANDOFF):
+            try:
+                cmd = subprocess.run('mkdir ' + self.DFS_HANDOFF, shell = True, check = True)
+                if cmd.returncode == 0:
+                    print('*** Handoff Directory Created')
+                    handoff_path = os.path.join(self.DFS_HANDOFF, '/handoff.json')
+                    handoff = open(handoff_path, 'x')
+                    handoff.write([])
+                    handoff.close()
             except subprocess.CalledProcessError as e:
                 print(e.stderr)
 
@@ -162,6 +175,17 @@ class Worker:
         with open(path, 'r') as f:
             meta = json.load(f)
             return meta
+
+    def handleHandoff(self, instruction):
+        path = os.path.join(self.DFS_HANDOFF, '/handoff.json')
+        with open(path, 'r+') as f:
+            handoffInstruction = json.load(f)
+            handoffInstruction.append(instruction)
+            f.seek(0)
+            f.truncate()
+            json.dump(handoffInstruction, f)
+        
+
     
 
     
