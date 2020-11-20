@@ -130,7 +130,8 @@ def updateNodes(command, cart_id, data):
         if queryResults[node] == 'FAIL':
             instruction = {
                 'COMMAND': command,
-                'DATA': data
+                'DATA': data,
+                'IP': zk.getNodeIP(node)
             }
             handoff_ip = zk.getHandoffNodeIP(node)
             state = executeQuery('HANDOFF', handoff_ip, data= instruction)
