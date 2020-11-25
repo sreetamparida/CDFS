@@ -10,10 +10,20 @@ class Worker:
     def __init__(self):
         self.HOME = Path.home()
         self.DFS_HOME = os.path.join(self.HOME, '.dfs')
+        self.DFS_PRODUCT = os.path.join(self.HOME, '.proddata/data.json')
+        self.DFS_USER = os.path.join(self.HOME, '.userdata/userdata.json')
         self.DFS_CART = os.path.join(self.DFS_HOME, 'cart')
         self.DFS_ATTRIB = os.path.join(self.DFS_HOME, 'attrib')
         self.DFS_HANDOFF = os.path.join(self.DFS_HOME, 'handoff')
         self.SECONDARY_INDEX_PATH = os.path.join(self.DFS_ATTRIB, 'secondaryindex.json')
+
+        self.DATABASE = None
+        with open(self.DFS_PRODUCT, 'r') as f:
+            self.DATABASE = json.load(f)
+
+        self.USERDATA = None
+        with open(self.DFS_USER, 'r') as f:
+            self.USERDATA = json.load(f)
 
         if not os.path.exists(self.DFS_HOME):
             try:
@@ -184,6 +194,12 @@ class Worker:
             f.seek(0)
             f.truncate()
             json.dump(handoffInstruction, f)
+    
+    def getProductDetails(self):
+        return self.DATABASE
+
+    def getUserDetails(self):
+        return self.USERDATA
         
 
     

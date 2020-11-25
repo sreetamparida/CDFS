@@ -96,6 +96,14 @@ def handleHandoff():
         worker.handleHandoff(instruction)
         return 'SUCCESS: HANDOFF PERFORMED'
 
+@app.route('/product', methods=['GET', 'POST'])
+def getProductDetails():
+    return worker.getProductDetails()
+
+@app.route('/user', methods=['GET', 'POST'])
+def getUserDetails():
+    return worker.getUserDetails()
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
 

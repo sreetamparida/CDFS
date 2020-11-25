@@ -95,6 +95,7 @@ def checkVersions(nodeResults, cart_id):
     result = nodeResults[nodes[resultIndex]]
     for index, version in enumerate(versionMap):
         if version != currentVersion:
+            result['CONCURRENT'] = 'YES'
             quorum.implementQuorum(zk.getNodeIP(nodes[resultIndex]), zk.getNodeIP(nodes[index]), cart_id)
 
     return result
@@ -185,7 +186,7 @@ def processAdminQuery(FILTERS = None, HAS_FILTER = False):
             return result
         else:
             username = FILTERS[0].split(':')[1].strip().upper()
-            uid = db.getUID(username)
+            uid = db.getUID('10.0.3.147',username)
             result = queryNodes(uid)
             return result
     else:
@@ -210,13 +211,14 @@ def generateData(productDetails, uid):
 
 
 def processUserQuery(username, command, productName):
-    uid = db.getUID(username)
+    prod_ip = zk.getProductNode(productName)
+    uid = db.getUID(prod_ip, username)
     if uid != 'NOT A USER':
         if zk.exists(uid):
             if command == 'LIST':
                 result = queryNodes(uid)
                 return result
-            productDetails = db.getProductDetails(productName)
+            productDetails = db.getProductDetails(prod_ip, productName)
             filters = generateFilters(productDetails)
             data = generateData(productDetails, uid)
             result = updateNodes(command, uid, data)
@@ -228,7 +230,7 @@ def processUserQuery(username, command, productName):
                         zk.updateSecondaryIndex(f, uid, delete=True)
             return result
         else:
-            productDetails = db.getProductDetails(productName)
+            productDetails = db.getProductDetails(prod_ip, productName)
             filters = generateFilters(productDetails)
             data = generateData(productDetails, uid)
             result = createNode(username, uid, data)

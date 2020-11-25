@@ -60,3 +60,8 @@ class ZooKeeper:
         self.client.delete('/secondaryindex/', recursive=True)
         self.client.ensure_path('/cart/')
         self.client.ensure_path('/secondaryindex/')
+
+    def getProductNode(self, product_name):
+        path = '/product/'+product_name
+        self.client.ensure_path(path)
+        return self.client.get(path)[0].decode('utf-8')
